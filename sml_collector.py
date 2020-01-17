@@ -126,8 +126,8 @@ def readPort(port):
                 # tested with eHZ-IW8E2Axxx
                 isk = parseSML(data_hex,'0100000009ff',34,8) 
 
-                counter = parseSML(data_hex,'0100010800ff',34,16) 
-                print("%-20s %-10s %0.3f" % (port,isk,float(float(counter)/10000)))
+                counter = float(float(parseSML(data_hex,'0100010800ff',34,16))/10000)
+                print("%-20s %-10s %0.3f" % (port,isk,counter))
         else:
                 logging.error("unable to find sml message")
 
