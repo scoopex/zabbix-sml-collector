@@ -146,7 +146,7 @@ for port in ports:
 
 zabbix_sender = ZabbixSender()
 hostname = socket.gethostname()
-cycle_time = 10
+cycle_time = 120
 
 last_value=dict()
 
