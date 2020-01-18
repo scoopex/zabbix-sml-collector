@@ -24,6 +24,7 @@
 #
 ########################################################################
 
+import socket
 import sys
 import os
 import serial
@@ -31,6 +32,7 @@ import time
 import logging
 from datetime import datetime
 import math
+import json
 
 import sys
 import glob
@@ -122,7 +124,7 @@ def readPort(port,ser):
         if reading_ok:
                 # tested with eHZ-IW8E2Axxx
                 isk = parseSML(data_hex,b'0100000009ff',34,8) 
-                counter = float(float(parseSML(data_hex,b'0100010800ff',34,16))/10000)
+                counter = float(float(parseSML(data_hex,b'0100010800ff',34,16))/100)
                 return (port,isk,counter)
         else:
                 logger.error("unable to find sml message")
@@ -131,9 +133,6 @@ def readPort(port,ser):
 
 ########################################################################
 # MAIN          
-# 1b1b1b1b010101017607000b06d8119a620062007263010176010107000b025c05de0b0901454d4800004735c7010163a74e007607000b06d8119b620062007263070177010b0901454d4800004735c7070100620affff72620165025cd8f87a77078181c78203ff0101010104454d480177070100000009ff010101010b0901454d4800004735c70177070100010800ff6401018201621e52ff56000308cff70177070100020800ff6401018201621e52ff5600015fc1450177070100010801ff0101621e52ff56000308cff70177070100020801ff0101621e52ff5600015fc1450177070100010802ff0101621e52ff5600000000000177070100020802ff0101621e52ff5600000000000177070100100700ff0101621b52ff5500000b940177078181c78205ff0172620165025cd8f801018302841ead39cbefc83a615721f4639f94b453d6793c0f28883a1a2291deb9b7905b9af9e8bcc3955444cdb68d7078d1351b0101016323d4007607000b06d8119e6200620072630201710163527100001b1b1b1b1a01684c 
-#
-########################################################################
 
 if len(sys.argv) > 1:
     ports = sys.argv[1:]
@@ -146,24 +145,50 @@ for port in ports:
     descriptors[port] = open_port(port)
 
 zabbix_sender = ZabbixSender()
-import socket
+hostname = socket.gethostname()
+cycle_time = 10
+
+last_value=dict()
+
+last_discovery = 0
 
 while True:
     try:
         metrics=[]
+        discovery = []
+        
         for port,ser in descriptors.items():
            (port,isk,counter) = readPort(port,ser)
+           discovery.append({"{#POWER_METER}" : isk})
+
            item_name='power_meter[%s]' % isk
            item_value='%0.4f' % counter
-           metrics.append(ZabbixMetric(socket.gethostname(),item_name,item_value))
-           logger.info("%-16s : %s = %s" % (port,item_name,item_value))
+           metrics.append(ZabbixMetric(hostname,item_name,item_value))
+           logger.info("%s : %s = %s" % (port,item_name,item_value))
+
+           if isk in last_value:
+               item_name='power_meter[%s,current]' % isk
+               time_elapsed = time.time() - last_value[isk]["time"]
+               item_value='%0.4f' % float(float(float(counter - float(last_value[isk]["value"]))/time_elapsed) * 3600)
+               metrics.append(ZabbixMetric(hostname,item_name,item_value))
+               logger.info("%s : %s = %s" % (port,item_name,item_value))
+           
+           last_value[isk] = { "time": time.time() , "value" : counter }
+    
+        if time.time() - last_discovery > 9600:
+            discovery_key = "power_meter.discovery"
+            disovery_value = json.dumps({"data": discovery})
+            metrics.append(ZabbixMetric(hostname,discovery_key,disovery_value))
+            logger.info("%s = %s" % (discovery_key,disovery_value))
+            last_discovery = time.time()
+
         result = zabbix_sender.send(metrics)
         if result.failed > 0:
-            logger.info("failed to sent %s zabbix items: %s" % (len(metrics),result))
+            logger.error("failed to sent %s zabbix items: %s" % (len(metrics),result))
         else:
-            logger.error("sucessfully sent %s zabbix items" % len(metrics))
+            logger.info("sucessfully sent %s zabbix items" % len(metrics))
 
-        time.sleep(10)
+        time.sleep(cycle_time)
     except Exception as e:
         logger.error("Fatal error in main loop", exc_info=True)
         descriptors=dict()
