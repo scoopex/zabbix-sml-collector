@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 #
 ########################################################################
@@ -31,15 +31,13 @@ import time
 import logging
 from datetime import datetime
 import math
-import ssl
-import urllib
 
-########################################################################
 import sys
 import glob
 import time
 import serial
-# http://stackoverflow.com/a/14224477
+import binascii
+from pyzabbix import ZabbixMetric, ZabbixSender
 
 # logging
 global logging
@@ -47,8 +45,8 @@ logging.basicConfig(level=logging.INFO,
                                 format='%(asctime)s %(levelname)s %(message)s', 
                                 datefmt='%Y-%m-%d %H:%M:%S')
 
-#logger = logging.getLogger(__name__)
-#logger.setLevel(logging.DEBUG)
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 
 # ------------- #
@@ -70,7 +68,7 @@ def parseSML(data_hex, obis_string, pos, length):
         
         # break, do not send mqtt message
         if position <= 0:
-            logging.debug("%s int:%s raw:%s" % ("180",isk, data_hex))
+            logger.debug("%s int:%s raw:%s" % ("180",isk, data_hex))
             return 0
 
         # extract reading from position start: 34 length: 10 (for 1.8.0.)
@@ -80,9 +78,7 @@ def parseSML(data_hex, obis_string, pos, length):
         obis_value = hexstr2signedint(hex_value)
         return obis_value
 
-
-def readPort(port):
-
+def open_port(port):
         # eHZ-Datentelegramme können mittels eines optischen Auslesekopfs nach DIN EN 62056-21 
         # z. B. über die serielle Schnittstelle eines PC ausgelesen werden.
         # Einstellung: bit/s= 9600, Datenbit = 7, Parität = gerade, Stoppbits = 1, Flusssteuerung = kein.
@@ -99,6 +95,9 @@ def readPort(port):
         ser.flushInput()
         ser.flushOutput()
 
+        return ser
+
+def readPort(port,ser):
 
         data_hex = ''
         reading_ok = False
@@ -106,30 +105,28 @@ def readPort(port):
                 # read n chars, change that in case it's too short
                 while (1):
                         data_raw = ser.read(50)
-                        #print(data_raw.encode("hex"))
 
                         # find start escape sequence: 1b1b1b1b0101010176
-                        if data_raw.encode("hex").find("1b1b1b1b0101010176") >= 0 :
+                        if binascii.hexlify(data_raw).find(b"1b1b1b1b0101010176") >= 0 :
                                 data_raw += ser.read(750) #lenght is 792
                                 reading_ok = True 
                                 break # found enough data, stop reading serial port
-        except serial.serialutil.SerialException, e:
+        except serial.serialutil.SerialException as e:
                 reading_ok = False
-                logging.debug("Error reading serial port: %s" % (e,))
+                logger.debug("Error reading serial port: %s" % (e,))
                 print("Error reading serial port: ", e)
 
         # convert reading to hex:
-        data_hex = data_raw.encode("hex")
-        # print (data_hex)
+        data_hex = binascii.hexlify(data_raw)
 
         if reading_ok:
                 # tested with eHZ-IW8E2Axxx
-                isk = parseSML(data_hex,'0100000009ff',34,8) 
-
-                counter = float(float(parseSML(data_hex,'0100010800ff',34,16))/10000)
-                print("%-20s %-10s %0.3f" % (port,isk,counter))
+                isk = parseSML(data_hex,b'0100000009ff',34,8) 
+                counter = float(float(parseSML(data_hex,b'0100010800ff',34,16))/10000)
+                return (port,isk,counter)
         else:
-                logging.error("unable to find sml message")
+                logger.error("unable to find sml message")
+                raise Exception("DataError")
 
 
 ########################################################################
@@ -143,8 +140,34 @@ if len(sys.argv) > 1:
 else:
     ports = glob.glob('/dev/ttyUSB*')
 
+descriptors=dict()
+
+for port in ports:
+    descriptors[port] = open_port(port)
+
+zabbix_sender = ZabbixSender()
+import socket
+
 while True:
-    for port in ports:
-       readPort(port)
-    time.sleep(10)
+    try:
+        metrics=[]
+        for port,ser in descriptors.items():
+           (port,isk,counter) = readPort(port,ser)
+           item_name='power_meter[%s]' % isk
+           item_value='%0.4f' % counter
+           metrics.append(ZabbixMetric(socket.gethostname(),item_name,item_value))
+           logger.info("%-16s : %s = %s" % (port,item_name,item_value))
+        result = zabbix_sender.send(metrics)
+        if result.failed > 0:
+            logger.info("failed to sent %s zabbix items: %s" % (len(metrics),result))
+        else:
+            logger.error("sucessfully sent %s zabbix items" % len(metrics))
+
+        time.sleep(10)
+    except Exception as e:
+        logger.error("Fatal error in main loop", exc_info=True)
+        descriptors=dict()
+        for port in ports:
+            descriptors[port] = open_port(port)
+
 
