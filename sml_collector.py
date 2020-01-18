@@ -27,7 +27,7 @@ logging.basicConfig(level=logging.INFO,
                     datefmt='%Y-%m-%d %H:%M:%S')
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 # ------------- #
@@ -105,7 +105,7 @@ def readPort(port, ser):
     if reading_ok:
         # tested with eHZ-IW8E2Axxx
         isk = str(parseSML(data_hex, b'0100000009ff', 34, 8))
-        counter = float(float(parseSML(data_hex, b'0100010800ff', 34, 16)) / 10)
+        counter = float((parseSML(data_hex, b'0100010800ff', 34, 16)) / 10)
         return (port, isk, counter)
     else:
         logger.error("unable to find sml message")
@@ -127,7 +127,7 @@ for port in ports:
 
 zabbix_sender = ZabbixSender()
 hostname = socket.gethostname()
-cycle_time = 180
+cycle_time = 60
 
 last_value = dict()
 
@@ -158,14 +158,14 @@ while True:
             item_name = 'power_meter[%s]' % isk
             item_value = '%0.4f' % counter
             metrics.append(ZabbixMetric(hostname, item_name, item_value))
-            logger.info("%s : %s = %s" % (desc, item_name, item_value))
+            logger.info("[%-20s] : %s = %s" % (desc, item_name, item_value))
 
             if isk in last_value:
                 item_name = 'power_meter[%s,current]' % isk
                 time_elapsed = time.time() - last_value[isk]["time"]
-                item_value = '%0.4f' % float(float(float(counter - float(last_value[isk]["value"])) / time_elapsed) * 3600)
+                item_value = '%0.4f' % float(float(float(counter - float(last_value[isk]["value"])) / float(time_elapsed)) * 3600)
                 metrics.append(ZabbixMetric(hostname, item_name, item_value))
-                logger.info("%s : %s = %s" % (desc, item_name, item_value))
+                logger.info("[%-20s] : %s = %s" % (desc, item_name, item_value))
 
             last_value[isk] = {"time": time.time(), "value": counter}
 
