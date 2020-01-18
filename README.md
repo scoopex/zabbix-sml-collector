@@ -11,6 +11,9 @@ I used the following hardware:
 * 2 expensive [Weidmann USB optic sensors](https://shop.weidmann-elektronik.de/index.php?page=product&info=24])</br>
   (i was to lazy to solder two sensor by my own, unbelievable price for such a simple hardware :-)
 
+
+For details of the monitored kubernetes attributes, have a look at the [documentation](http://htmlpreview.github.io/?https://github.com/scoopex/zabbix-sml-collector/blob/master/template/documentation/custom_hw_building_template.html)
+
 # Installation and usage
 
 
@@ -35,7 +38,7 @@ I used the following hardware:
   systemctl start csml_collector.service
   systemctl status sml_collector.service
   ```
+* Add zabbix template from `zabbix/custom_hw_building_template.xml`
 
 # Authors
-
   * Marc Schoechlin <ms-github@256bit.org>

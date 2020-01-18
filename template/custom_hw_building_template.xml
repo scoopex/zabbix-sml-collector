@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<zabbix_export>
+    <version>4.4</version>
+    <date>2020-01-18T10:31:38Z</date>
+    <groups>
+        <group>
+            <name>Templates</name>
+        </group>
+    </groups>
+    <templates>
+        <template>
+            <template>Custom - HW - Building</template>
+            <name>Custom - HW - Building</name>
+            <groups>
+                <group>
+                    <name>Templates</name>
+                </group>
+            </groups>
+            <applications>
+                <application>
+                    <name>Custom - HW - Building</name>
+                </application>
+            </applications>
+            <discovery_rules>
+                <discovery_rule>
+                    <name>Power Meter</name>
+                    <type>TRAP</type>
+                    <key>power_meter.discovery</key>
+                    <delay>0</delay>
+                    <lifetime>1d</lifetime>
+                    <item_prototypes>
+                        <item_prototype>
+                            <name>Power Meter {#POWER_DESC} Power Usage</name>
+                            <type>TRAP</type>
+                            <key>power_meter[{#POWER_METER},current]</key>
+                            <delay>0</delay>
+                            <history>7d</history>
+                            <trends>2000d</trends>
+                            <value_type>FLOAT</value_type>
+                            <units>W</units>
+                            <applications>
+                                <application>
+                                    <name>Custom - HW - Building</name>
+                                </application>
+                            </applications>
+                        </item_prototype>
+                        <item_prototype>
+                            <name>Power Meter {#POWER_DESC} Power Consumption</name>
+                            <type>TRAP</type>
+                            <key>power_meter[{#POWER_METER}]</key>
+                            <delay>0</delay>
+                            <history>7d</history>
+                            <trends>2000d</trends>
+                            <value_type>FLOAT</value_type>
+                            <units>KW</units>
+                            <applications>
+                                <application>
+                                    <name>Custom - HW - Building</name>
+                                </application>
+                            </applications>
+                            <preprocessing>
+                                <step>
+                                    <type>MULTIPLIER</type>
+                                    <params>0.001</params>
+                                </step>
+                            </preprocessing>
+                        </item_prototype>
+                    </item_prototypes>
+                    <graph_prototypes>
+                        <graph_prototype>
+                            <name>Power Meter {#POWER_DESC} Watt</name>
+                            <width>600</width>
+                            <height>300</height>
+                            <graph_items>
+                                <graph_item>
+                                    <drawtype>GRADIENT_LINE</drawtype>
+                                    <color>1A7C11</color>
+                                    <calc_fnc>MAX</calc_fnc>
+                                    <item>
+                                        <host>Custom - HW - Building</host>
+                                        <key>power_meter[{#POWER_METER}]</key>
+                                    </item>
+                                </graph_item>
+                            </graph_items>
+                        </graph_prototype>
+                        <graph_prototype>
+                            <name>Power Meter {#POWER_DESC} Watt Usage</name>
+                            <width>600</width>
+                            <height>300</height>
+                            <ymin_type_1>FIXED</ymin_type_1>
+                            <graph_items>
+                                <graph_item>
+                                    <color>00796B</color>
+                                    <calc_fnc>MAX</calc_fnc>
+                                    <item>
+                                        <host>Custom - HW - Building</host>
+                                        <key>power_meter[{#POWER_METER},current]</key>
+                                    </item>
+                                </graph_item>
+                            </graph_items>
+                        </graph_prototype>
+                    </graph_prototypes>
+                </discovery_rule>
+            </discovery_rules>
+            <screens>
+                <screen>
+                    <name>Custom - HW - Building</name>
+                    <hsize>2</hsize>
+                    <vsize>1</vsize>
+                    <screen_items>
+                        <screen_item>
+                            <resourcetype>20</resourcetype>
+                            <style>0</style>
+                            <resource>
+                                <name>Power Meter {#POWER_DESC} Watt Usage</name>
+                                <host>Custom - HW - Building</host>
+                            </resource>
+                            <width>600</width>
+                            <height>300</height>
+                            <x>0</x>
+                            <y>0</y>
+                            <colspan>1</colspan>
+                            <rowspan>1</rowspan>
+                            <elements>0</elements>
+                            <valign>0</valign>
+                            <halign>0</halign>
+                            <dynamic>0</dynamic>
+                            <sort_triggers>0</sort_triggers>
+                            <url/>
+                            <application/>
+                            <max_columns>1</max_columns>
+                        </screen_item>
+                        <screen_item>
+                            <resourcetype>20</resourcetype>
+                            <style>0</style>
+                            <resource>
+                                <name>Power Meter {#POWER_DESC} Watt</name>
+                                <host>Custom - HW - Building</host>
+                            </resource>
+                            <width>600</width>
+                            <height>300</height>
+                            <x>1</x>
+                            <y>0</y>
+                            <colspan>1</colspan>
+                            <rowspan>1</rowspan>
+                            <elements>0</elements>
+                            <valign>0</valign>
+                            <halign>0</halign>
+                            <dynamic>0</dynamic>
+                            <sort_triggers>0</sort_triggers>
+                            <url/>
+                            <application/>
+                            <max_columns>1</max_columns>
+                        </screen_item>
+                    </screen_items>
+                </screen>
+            </screens>
+        </template>
+    </templates>
+</zabbix_export>
