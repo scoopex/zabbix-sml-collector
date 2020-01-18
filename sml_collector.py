@@ -43,14 +43,14 @@ def hexstr2signedint(hexval):
 
 
 # parse hex string from USB serial stream and extract values for obis_id
-def parseSML(data_hex, obis_string, pos, length):
+def parseSMLInteger(data_hex, obis_string, pos, length):
     obis_value = 0
     # find position of OBIS-Kennzahl
     position = data_hex.find(obis_string)
 
-    # break, do not send mqtt message
+    # break
     if position <= 0:
-        logger.debug("%s int:%s raw:%s" % ("180", isk, data_hex))
+        logger.error("unable to find %s raw:%s" % (obis_string,data_hex))
         return 0
 
     # extract reading from position start: 34 length: 10 (for 1.8.0.)
@@ -58,6 +58,24 @@ def parseSML(data_hex, obis_string, pos, length):
 
     # convert to integer, check range
     obis_value = hexstr2signedint(hex_value)
+    return obis_value
+
+# parse hex string from USB serial stream and extract values for obis_id
+def parseSMLUnsigned(data_hex, obis_string, pos, length):
+    obis_value = 0
+    # find position of OBIS-Kennzahl
+    position = data_hex.find(obis_string)
+
+    # break
+    if position <= 0:
+        logger.error("unable to find %s raw:%s" % (obis_string,data_hex))
+        return 0
+
+    # extract reading from position start: 34 length: 10 (for 1.8.0.)
+    hex_value = data_hex[position + pos:position + pos + length]
+
+    # convert to integer, check range
+    obis_value = int.from_bytes(hex_value, byteorder='little', signed=False)
     return obis_value
 
 
@@ -91,22 +109,22 @@ def readPort(port, ser):
 
             # find start escape sequence: 1b1b1b1b0101010176
             if binascii.hexlify(data_raw).find(b"1b1b1b1b0101010176") >= 0:
-                data_raw += ser.read(750)  # lenght is 792
+                data_raw += ser.read(792)  # lenght is 792
                 reading_ok = True
                 break  # found enough data, stop reading serial port
     except serial.serialutil.SerialException as e:
         reading_ok = False
-        logger.debug("Error reading serial port: %s" % (e,))
-        print("Error reading serial port: ", e)
+        logger.debug("Error reading serial port: %s" % e)
 
     # convert reading to hex:
     data_hex = binascii.hexlify(data_raw)
 
     if reading_ok:
         # tested with eHZ-IW8E2Axxx
-        isk = str(parseSML(data_hex, b'0100000009ff', 34, 8))
-        counter = float((parseSML(data_hex, b'0100010800ff', 34, 16)) / 10)
-        return (port, isk, counter)
+        isk = str(parseSMLInteger(data_hex, b'0100000009ff', 34, 8))
+        counter = float((parseSMLInteger(data_hex, b'0100010800ff', 34, 16)) / float(10))
+        watt = float((parseSMLUnsigned(data_hex, b'0100100700ff', 34, 8)))
+        return (port, isk, counter, watt)
     else:
         logger.error("unable to find sml message")
         raise Exception("DataError")
@@ -127,7 +145,7 @@ for port in ports:
 
 zabbix_sender = ZabbixSender()
 hostname = socket.gethostname()
-cycle_time = 60
+cycle_time = 300
 
 last_value = dict()
 
@@ -148,22 +166,33 @@ while True:
         discovery = []
 
         for port, ser in descriptors.items():
-            (port, isk, counter) = readPort(port, ser)
+            (port, isk, counter, watt) = readPort(port, ser)
+
+            # Discovery
             if isk in discovery_desc:
                 desc = discovery_desc[isk]
             else:
                 desc = isk
             discovery.append({"{#POWER_METER}": isk, "{#POWER_DESC}": desc})
 
+            # Counter WH
             item_name = 'power_meter[%s]' % isk
             item_value = '%0.4f' % counter
             metrics.append(ZabbixMetric(hostname, item_name, item_value))
             logger.info("[%-20s] : %s = %s" % (desc, item_name, item_value))
 
+            # Watt
+            item_name = 'power_meter[%s,watt]' % isk
+            item_value = '%0.4f' % watt
+            metrics.append(ZabbixMetric(hostname, item_name, item_value))
+            logger.info("[%-20s] : %s = %s" % (desc, item_name, item_value))
+
+
             if isk in last_value:
                 item_name = 'power_meter[%s,current]' % isk
                 time_elapsed = time.time() - last_value[isk]["time"]
-                item_value = '%0.4f' % float(float(float(counter - float(last_value[isk]["value"])) / float(time_elapsed)) * 3600)
+                #item_value = '%0.4f' % float(float(float(counter - float(last_value[isk]["value"])) / float(time_elapsed)) * 3600)
+                item_value = '%0.4f' % float(float(counter - float(last_value[isk]["value"])))
                 metrics.append(ZabbixMetric(hostname, item_name, item_value))
                 logger.info("[%-20s] : %s = %s" % (desc, item_name, item_value))
 
