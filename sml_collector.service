@@ -1,0 +1,23 @@
+[Unit]
+Description=sml_collector
+After=network.target auditd.service syslog.target
+
+[Service]
+WorkingDirectory=/opt/zabbix-sml-collector/
+ExecStart=/opt/zabbix-sml-collector/sml_collector.py
+KillMode=process
+Restart=on-failure
+RestartPreventExitStatus=255
+User=root
+Group=root
+SyslogIdentifier=ceph_collector
+StandardOutput=journal
+StandardError=journal
+LimitNOFILE=infinity
+LimitSTACK=infinity
+LimitCORE=infinity
+OOMScoreAdjust=-1000
+
+[Install]
+WantedBy=multi-user.target
+
