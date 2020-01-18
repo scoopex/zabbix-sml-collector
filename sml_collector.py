@@ -123,8 +123,8 @@ def readPort(port,ser):
 
         if reading_ok:
                 # tested with eHZ-IW8E2Axxx
-                isk = parseSML(data_hex,b'0100000009ff',34,8) 
-                counter = float(float(parseSML(data_hex,b'0100010800ff',34,16))/100)
+                isk = str(parseSML(data_hex,b'0100000009ff',34,8))
+                counter = float(float(parseSML(data_hex,b'0100010800ff',34,16))/10)
                 return (port,isk,counter)
         else:
                 logger.error("unable to find sml message")
@@ -146,11 +146,21 @@ for port in ports:
 
 zabbix_sender = ZabbixSender()
 hostname = socket.gethostname()
-cycle_time = 120
+cycle_time = 180
 
 last_value=dict()
 
 last_discovery = 0
+
+mappings_json=os.path.realpath(os.path.dirname(os.path.realpath(__file__)))+"/mappings.json"
+
+if os.path.exists(mappings_json):
+    with open(mappings_json) as f:
+        discovery_desc = json.load(f)
+else:
+    logger.warning("no %s, no mappings" % mappings_json)
+    discovery_desc = {}
+
 
 while True:
     try:
@@ -158,20 +168,24 @@ while True:
         discovery = []
         
         for port,ser in descriptors.items():
-           (port,isk,counter) = readPort(port,ser)
-           discovery.append({"{#POWER_METER}" : isk})
+           (port, isk, counter) = readPort(port,ser)
+           if isk in discovery_desc:
+                desc =  discovery_desc[isk]
+           else:
+                desc = isk
+           discovery.append({"{#POWER_METER}" : isk, "{#POWER_DESC}": desc})
 
            item_name='power_meter[%s]' % isk
            item_value='%0.4f' % counter
            metrics.append(ZabbixMetric(hostname,item_name,item_value))
-           logger.info("%s : %s = %s" % (port,item_name,item_value))
+           logger.info("%s : %s = %s" % (desc,item_name,item_value))
 
            if isk in last_value:
                item_name='power_meter[%s,current]' % isk
                time_elapsed = time.time() - last_value[isk]["time"]
                item_value='%0.4f' % float(float(float(counter - float(last_value[isk]["value"]))/time_elapsed) * 3600)
                metrics.append(ZabbixMetric(hostname,item_name,item_value))
-               logger.info("%s : %s = %s" % (port,item_name,item_value))
+               logger.info("%s : %s = %s" % (desc,item_name,item_value))
            
            last_value[isk] = { "time": time.time() , "value" : counter }
     
