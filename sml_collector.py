@@ -74,8 +74,9 @@ def parseSMLUnsigned(data_hex, obis_string, pos, length):
     # extract reading from position start: 34 length: 10 (for 1.8.0.)
     hex_value = data_hex[position + pos:position + pos + length]
 
-    # convert to integer, check range
+    #obis_value = int(hex_value,16)
     obis_value = int.from_bytes(hex_value, byteorder='little', signed=False)
+
     return obis_value
 
 
