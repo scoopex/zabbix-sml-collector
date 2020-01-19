@@ -12,7 +12,7 @@ import socket
 import os
 import logging
 import json
-
+import argparse
 import sys
 import glob
 import time
@@ -103,6 +103,13 @@ def open_port(port):
 def readPort(port, ser):
     data_hex = ''
     reading_ok = False
+
+    # read to end of file
+    nr_of_waiting_bytes=ser.in_waiting
+    ser.read(nr_of_waiting_bytes)
+    logger.debug("read %s bytes to move to end" % nr_of_waiting_bytes)
+
+
     try:
         # read n chars, change that in case it's too short
         while (1):
@@ -119,12 +126,13 @@ def readPort(port, ser):
 
     # convert reading to hex:
     data_hex = binascii.hexlify(data_raw)
+    logger.debug("HEX DATA: >>>%s<<<" % data_hex)
 
     if reading_ok:
         # tested with eHZ-IW8E2Axxx
         isk = str(parseSMLInteger(data_hex, b'0100000009ff', 34, 8))
         counter = float((parseSMLInteger(data_hex, b'0100010800ff', 34, 16)) / float(10))
-        watt = float((parseSMLUnsigned(data_hex, b'0100100700ff', 34, 8)))
+        watt = float((parseSMLUnsigned(data_hex, b'0100100700ff', 30, 16)))
         return (port, isk, counter, watt)
     else:
         logger.error("unable to find sml message")
@@ -134,10 +142,27 @@ def readPort(port, ser):
 ########################################################################
 # MAIN          
 
-if len(sys.argv) > 1:
-    ports = sys.argv[1:]
+
+parser = argparse.ArgumentParser(
+    description='Monitoring daemon for sml data'
+)
+
+parser.add_argument(
+    '--debug',
+    help='show debug info',
+    action='store_true', )
+
+args, remaining_args = parser.parse_known_args()
+
+
+if len(remaining_args) > 0:
+    ports = remaining_args
 else:
     ports = glob.glob('/dev/ttyUSB*')
+
+
+if args.debug:
+    logger.setLevel(logging.DEBUG)
 
 descriptors = dict()
 
@@ -146,7 +171,7 @@ for port in ports:
 
 zabbix_sender = ZabbixSender()
 hostname = socket.gethostname()
-cycle_time = 300
+cycle_time = 10
 
 last_value = dict()
 
