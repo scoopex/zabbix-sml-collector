@@ -154,6 +154,12 @@ parser.add_argument(
     '--debug',
     help='show debug info',
     action='store_true', )
+
+parser.add_argument(
+    '--quiet',
+    help='show only warning/error info',
+    action='store_true', )
+
 parser.add_argument(
     '--interval',
     help='intervall',
@@ -172,6 +178,9 @@ else:
 
 if args.debug:
     logger.setLevel(logging.DEBUG)
+
+if args.quiet:
+    logger.setLevel(logging.WARN)
 
 descriptors = dict()
 

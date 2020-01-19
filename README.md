@@ -36,7 +36,7 @@ For details of the monitored kubernetes attributes, have a look at the [document
   chown root:root /etc/systemd/system/sml_collector.service
   systemctl daemon-reload
   systemctl enable sml_collector.service
-  systemctl start csml_collector.service
+  systemctl start sml_collector.service
   systemctl status sml_collector.service
   ```
 * Add zabbix template from `zabbix/custom_hw_building_template.xml`

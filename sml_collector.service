@@ -4,7 +4,7 @@ After=network.target auditd.service syslog.target
 
 [Service]
 WorkingDirectory=/opt/zabbix-sml-collector/
-ExecStart=/opt/zabbix-sml-collector/sml_collector.py
+ExecStart=/opt/zabbix-sml-collector/sml_collector.py --quiet
 KillMode=process
 Restart=on-failure
 RestartPreventExitStatus=255
