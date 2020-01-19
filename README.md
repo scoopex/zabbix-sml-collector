@@ -28,6 +28,7 @@ For details of the monitored kubernetes attributes, have a look at the [document
 * Test
   ```
   ./sml_collector.py
+  ./sml_collector.py /dev/ttyUSB1  --debug --interval 10
   ```
 * Install as service
   ```

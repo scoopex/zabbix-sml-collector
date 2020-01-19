@@ -57,6 +57,7 @@ def parseSMLInteger(data_hex, obis_string, pos, length):
     hex_value = data_hex[position + pos:position + pos + length]
 
     # convert to integer, check range
+    logger.debug("Parsed Value after '%s' : >>>%s<<<" % (obis_string,hex_value))
     obis_value = hexstr2signedint(hex_value)
     return obis_value
 
@@ -75,6 +76,7 @@ def parseSMLUnsigned(data_hex, obis_string, pos, length):
     hex_value = data_hex[position + pos:position + pos + length]
 
     #obis_value = int(hex_value,16)
+    logger.debug("Parsed Value after '%s' : >>>%s<<<" % (obis_string,hex_value))
     obis_value = int.from_bytes(hex_value, byteorder='little', signed=False)
 
     return obis_value
@@ -132,8 +134,9 @@ def readPort(port, ser):
         # tested with eHZ-IW8E2Axxx
         isk = str(parseSMLInteger(data_hex, b'0100000009ff', 34, 8))
         counter = float((parseSMLInteger(data_hex, b'0100010800ff', 34, 16)) / float(10))
-        watt = float((parseSMLUnsigned(data_hex, b'0100100700ff', 30, 16)))
-        return (port, isk, counter, watt)
+        # 0101621b5200550000023d
+        ampere = float((parseSMLUnsigned(data_hex, b'0100100700ff', 12+15, 8)))
+        return (port, isk, counter, ampere)
     else:
         logger.error("unable to find sml message")
         raise Exception("DataError")
@@ -151,6 +154,12 @@ parser.add_argument(
     '--debug',
     help='show debug info',
     action='store_true', )
+parser.add_argument(
+    '--interval',
+    help='intervall',
+    type=int,
+    default=120)
+
 
 args, remaining_args = parser.parse_known_args()
 
@@ -171,7 +180,6 @@ for port in ports:
 
 zabbix_sender = ZabbixSender()
 hostname = socket.gethostname()
-cycle_time = 10
 
 last_value = dict()
 
@@ -192,7 +200,7 @@ while True:
         discovery = []
 
         for port, ser in descriptors.items():
-            (port, isk, counter, watt) = readPort(port, ser)
+            (port, isk, counter, ampere) = readPort(port, ser)
 
             # Discovery
             if isk in discovery_desc:
@@ -202,20 +210,20 @@ while True:
             discovery.append({"{#POWER_METER}": isk, "{#POWER_DESC}": desc})
 
             # Counter WH
-            item_name = 'power_meter[%s]' % isk
+            item_name = 'power_meter[%s,counter_wh]' % isk
             item_value = '%0.4f' % counter
             metrics.append(ZabbixMetric(hostname, item_name, item_value))
             logger.info("[%-20s] : %s = %s" % (desc, item_name, item_value))
 
-            # Watt
-            item_name = 'power_meter[%s,watt]' % isk
-            item_value = '%0.4f' % watt
+            # Ampere
+            item_name = 'power_meter[%s,current_ampere]' % isk
+            item_value = '%0.4f' % ampere
             metrics.append(ZabbixMetric(hostname, item_name, item_value))
             logger.info("[%-20s] : %s = %s" % (desc, item_name, item_value))
 
 
             if isk in last_value:
-                item_name = 'power_meter[%s,current]' % isk
+                item_name = 'power_meter[%s,interval_wh]' % isk
                 time_elapsed = time.time() - last_value[isk]["time"]
                 #item_value = '%0.4f' % float(float(float(counter - float(last_value[isk]["value"])) / float(time_elapsed)) * 3600)
                 item_value = '%0.4f' % float(float(counter - float(last_value[isk]["value"])))
@@ -237,7 +245,7 @@ while True:
         else:
             logger.info("sucessfully sent %s zabbix items" % len(metrics))
 
-        time.sleep(cycle_time)
+        time.sleep(args.interval)
     except Exception as e:
         logger.error("Fatal error in main loop", exc_info=True)
         descriptors = dict()
