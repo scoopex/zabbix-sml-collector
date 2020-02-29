@@ -135,9 +135,10 @@ def readPort(port, ser):
         # tested with eHZ-IW8E2Axxx
         isk = str(parseSMLInteger(data_hex, b'0100000009ff', 34, 8))
         counter = Decimal((parseSMLInteger(data_hex, b'0100010800ff', 34, 16)) / Decimal(10))
-        # 0101621b5200550000023d
-        ampere = Decimal((parseSMLUnsigned(data_hex, b'0100100700ff', 12+15, 8)))
-        return (port, isk, counter, ampere)
+
+        watt = Decimal((parseSMLUnsigned(data_hex, b'0100100700ff', 12+15, 8)))
+
+        return (port, isk, counter, watt)
     else:
         logger.error("unable to find sml message")
         raise Exception("DataError")
@@ -163,7 +164,7 @@ parser.add_argument(
 
 parser.add_argument(
     '--interval',
-    help='intervall',
+    help='interval',
     type=int,
     default=120)
 
@@ -210,7 +211,7 @@ while True:
         discovery = []
 
         for port, ser in descriptors.items():
-            (port, isk, counter, ampere) = readPort(port, ser)
+            (port, isk, counter, watt) = readPort(port, ser)
 
             # Discovery
             if isk in discovery_desc:
@@ -226,8 +227,8 @@ while True:
             logger.info("[%-20s] : %s = %s" % (desc, item_name, item_value))
 
             # Ampere
-            item_name = 'power_meter[%s,current_ampere]' % isk
-            item_value = '%0.4f' % ampere
+            item_name = 'power_meter[%s,current_w]' % isk
+            item_value = '%0.4f' % Decimal(watt/Decimal(1000000))
             metrics.append(ZabbixMetric(hostname, item_name, item_value))
             logger.info("[%-20s] : %s = %s" % (desc, item_name, item_value))
 
@@ -235,11 +236,12 @@ while True:
             if isk in last_value:
                 item_name = 'power_meter[%s,interval_wh]' % isk
                 time_elapsed = time.time() - last_value[isk]["time"]
-                item_value = '%0.4f' % Decimal(Decimal(Decimal(counter - Decimal(last_value[isk]["value"])))/Decimal(1000))
+                item_difference = Decimal(counter - last_value[isk]["value"]) / Decimal(1000)
+                item_value = '%0.4f' % item_difference
                 metrics.append(ZabbixMetric(hostname, item_name, item_value))
                 logger.info("[%-20s] : %s = %s" % (desc, item_name, item_value))
 
-            last_value[isk] = {"time": time.time(), "value": Decimal(counter/Decimal(1000))}
+            last_value[isk] = {"time": time.time(), "value": counter}
 
         if time.time() - last_discovery > 9600:
             discovery_key = "power_meter.discovery"
