@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <zabbix_export>
     <version>4.4</version>
-    <date>2020-01-19T10:43:25Z</date>
+    <date>2020-02-29T10:58:41Z</date>
     <groups>
         <group>
             <name>Templates</name>
@@ -30,14 +30,15 @@
                     <lifetime>1d</lifetime>
                     <item_prototypes>
                         <item_prototype>
-                            <name>Power Meter {#POWER_DESC} Power Consumption</name>
-                            <type>TRAP</type>
-                            <key>power_meter[{#POWER_METER},counter_wh]</key>
-                            <delay>0</delay>
+                            <name>{#POWER_DESC} usage last 7d</name>
+                            <type>CALCULATED</type>
+                            <key>power_meter[{#POWER_METER},counter_wh,7d]</key>
+                            <delay>0;h0</delay>
                             <history>7d</history>
                             <trends>2000d</trends>
                             <value_type>FLOAT</value_type>
                             <units>KWH</units>
+                            <params>delta(&quot;power_meter[{#POWER_METER},counter_wh]&quot;,7d)</params>
                             <applications>
                                 <application>
                                     <name>Custom - HW - Building</name>
@@ -51,7 +52,66 @@
                             </preprocessing>
                         </item_prototype>
                         <item_prototype>
-                            <name>Power Meter {#POWER_DESC} Power Usage</name>
+                            <name>{#POWER_DESC} usage last 24h</name>
+                            <type>CALCULATED</type>
+                            <key>power_meter[{#POWER_METER},counter_wh,24h]</key>
+                            <delay>0;h0</delay>
+                            <history>7d</history>
+                            <trends>2000d</trends>
+                            <value_type>FLOAT</value_type>
+                            <units>KWH</units>
+                            <params>delta(&quot;power_meter[{#POWER_METER},counter_wh]&quot;,24h)</params>
+                            <applications>
+                                <application>
+                                    <name>Custom - HW - Building</name>
+                                </application>
+                            </applications>
+                            <preprocessing>
+                                <step>
+                                    <type>MULTIPLIER</type>
+                                    <params>0.001</params>
+                                </step>
+                            </preprocessing>
+                        </item_prototype>
+                        <item_prototype>
+                            <name>{#POWER_DESC} usage last 30d</name>
+                            <type>CALCULATED</type>
+                            <key>power_meter[{#POWER_METER},counter_wh,30d]</key>
+                            <delay>0;h0</delay>
+                            <history>7d</history>
+                            <trends>2000d</trends>
+                            <value_type>FLOAT</value_type>
+                            <units>KWH</units>
+                            <params>delta(&quot;power_meter[{#POWER_METER},counter_wh]&quot;,30d)</params>
+                            <applications>
+                                <application>
+                                    <name>Custom - HW - Building</name>
+                                </application>
+                            </applications>
+                            <preprocessing>
+                                <step>
+                                    <type>MULTIPLIER</type>
+                                    <params>0.001</params>
+                                </step>
+                            </preprocessing>
+                        </item_prototype>
+                        <item_prototype>
+                            <name>{#POWER_DESC} usage total</name>
+                            <type>TRAP</type>
+                            <key>power_meter[{#POWER_METER},counter_wh]</key>
+                            <delay>0</delay>
+                            <history>7d</history>
+                            <trends>2000d</trends>
+                            <value_type>FLOAT</value_type>
+                            <units>WH</units>
+                            <applications>
+                                <application>
+                                    <name>Custom - HW - Building</name>
+                                </application>
+                            </applications>
+                        </item_prototype>
+                        <item_prototype>
+                            <name>{#POWER_DESC} flux current</name>
                             <type>TRAP</type>
                             <key>power_meter[{#POWER_METER},current_ampere]</key>
                             <delay>0</delay>
@@ -66,14 +126,14 @@
                             </applications>
                         </item_prototype>
                         <item_prototype>
-                            <name>Power Meter {#POWER_DESC} Power Usage</name>
+                            <name>{#POWER_DESC} usage in Interval</name>
                             <type>TRAP</type>
                             <key>power_meter[{#POWER_METER},interval_wh]</key>
                             <delay>0</delay>
                             <history>7d</history>
                             <trends>2000d</trends>
                             <value_type>FLOAT</value_type>
-                            <units>W</units>
+                            <units>WH</units>
                             <applications>
                                 <application>
                                     <name>Custom - HW - Building</name>
@@ -83,23 +143,34 @@
                     </item_prototypes>
                     <graph_prototypes>
                         <graph_prototype>
-                            <name>Power Meter {#POWER_DESC} Watt</name>
+                            <name>Power {#POWER_DESC} Usage</name>
                             <width>600</width>
                             <height>300</height>
+                            <ymin_type_1>FIXED</ymin_type_1>
                             <graph_items>
                                 <graph_item>
                                     <drawtype>GRADIENT_LINE</drawtype>
-                                    <color>1A7C11</color>
+                                    <color>4DD0E1</color>
                                     <calc_fnc>MAX</calc_fnc>
                                     <item>
                                         <host>Custom - HW - Building</host>
                                         <key>power_meter[{#POWER_METER},counter_wh]</key>
                                     </item>
                                 </graph_item>
+                                <graph_item>
+                                    <sortorder>1</sortorder>
+                                    <color>F63100</color>
+                                    <yaxisside>RIGHT</yaxisside>
+                                    <calc_fnc>ALL</calc_fnc>
+                                    <item>
+                                        <host>Custom - HW - Building</host>
+                                        <key>power_meter[{#POWER_METER},interval_wh]</key>
+                                    </item>
+                                </graph_item>
                             </graph_items>
                         </graph_prototype>
                         <graph_prototype>
-                            <name>Power Meter {#POWER_DESC} Watt Usage</name>
+                            <name>Power {#POWER_DESC} Watt Usage</name>
                             <width>600</width>
                             <height>300</height>
                             <ymin_type_1>FIXED</ymin_type_1>
@@ -110,6 +181,41 @@
                                     <item>
                                         <host>Custom - HW - Building</host>
                                         <key>power_meter[{#POWER_METER},interval_wh]</key>
+                                    </item>
+                                </graph_item>
+                            </graph_items>
+                        </graph_prototype>
+                        <graph_prototype>
+                            <name>Power {#POWER_DESC} Watt Usage History</name>
+                            <width>600</width>
+                            <height>300</height>
+                            <show_work_period>NO</show_work_period>
+                            <ymin_type_1>FIXED</ymin_type_1>
+                            <graph_items>
+                                <graph_item>
+                                    <color>F63100</color>
+                                    <calc_fnc>MAX</calc_fnc>
+                                    <item>
+                                        <host>Custom - HW - Building</host>
+                                        <key>power_meter[{#POWER_METER},counter_wh,7d]</key>
+                                    </item>
+                                </graph_item>
+                                <graph_item>
+                                    <sortorder>1</sortorder>
+                                    <color>2774A4</color>
+                                    <calc_fnc>MAX</calc_fnc>
+                                    <item>
+                                        <host>Custom - HW - Building</host>
+                                        <key>power_meter[{#POWER_METER},counter_wh,24h]</key>
+                                    </item>
+                                </graph_item>
+                                <graph_item>
+                                    <sortorder>2</sortorder>
+                                    <color>673AB7</color>
+                                    <calc_fnc>MAX</calc_fnc>
+                                    <item>
+                                        <host>Custom - HW - Building</host>
+                                        <key>power_meter[{#POWER_METER},counter_wh,30d]</key>
                                     </item>
                                 </graph_item>
                             </graph_items>
@@ -127,7 +233,7 @@
                             <resourcetype>20</resourcetype>
                             <style>0</style>
                             <resource>
-                                <name>Power Meter {#POWER_DESC} Watt Usage</name>
+                                <name>Power {#POWER_DESC} Usage</name>
                                 <host>Custom - HW - Building</host>
                             </resource>
                             <width>600</width>
@@ -149,7 +255,7 @@
                             <resourcetype>20</resourcetype>
                             <style>0</style>
                             <resource>
-                                <name>Power Meter {#POWER_DESC} Watt</name>
+                                <name>Power {#POWER_DESC} Watt Usage History</name>
                                 <host>Custom - HW - Building</host>
                             </resource>
                             <width>600</width>

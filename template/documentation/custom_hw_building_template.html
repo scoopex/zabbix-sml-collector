@@ -90,11 +90,15 @@
 <th>Name</th><th>Elements</th>
 </tr>
 <tr>
-<td>Power Meter {#POWER_DESC} Watt</td><td><tt>power_meter[{#POWER_METER},counter_wh]<br>
+<td>Power {#POWER_DESC} Usage</td><td><tt>power_meter[{#POWER_METER},counter_wh]<br>power_meter[{#POWER_METER},interval_wh]<br>
 </tt></td>
 </tr>
 <tr>
-<td>Power Meter {#POWER_DESC} Watt Usage</td><td><tt>power_meter[{#POWER_METER},interval_wh]<br>
+<td>Power {#POWER_DESC} Watt Usage</td><td><tt>power_meter[{#POWER_METER},interval_wh]<br>
+</tt></td>
+</tr>
+<tr>
+<td>Power {#POWER_DESC} Watt Usage History</td><td><tt>power_meter[{#POWER_METER},counter_wh,7d]<br>power_meter[{#POWER_METER},counter_wh,24h]<br>power_meter[{#POWER_METER},counter_wh,30d]<br>
 </tt></td>
 </tr>
 </table>
@@ -106,17 +110,32 @@
 <tr>
 <td>
 <p class="desc">ERROR - Unknown</p>
-</td><td>Power Meter {#POWER_DESC} Power Consumption</td><td><tt>power_meter[{#POWER_METER},counter_wh]</tt></td><td></td><td>0</td><td>7d</td><td>2000d</td>
+</td><td>{#POWER_DESC} usage last 7d</td><td><tt>power_meter[{#POWER_METER},counter_wh,7d]</tt></td><td></td><td>0;h0</td><td>7d</td><td>2000d</td>
 </tr>
 <tr>
 <td>
 <p class="desc">ERROR - Unknown</p>
-</td><td>Power Meter {#POWER_DESC} Power Usage</td><td><tt>power_meter[{#POWER_METER},current_ampere]</tt></td><td></td><td>0</td><td>7d</td><td>2000d</td>
+</td><td>{#POWER_DESC} usage last 24h</td><td><tt>power_meter[{#POWER_METER},counter_wh,24h]</tt></td><td></td><td>0;h0</td><td>7d</td><td>2000d</td>
 </tr>
 <tr>
 <td>
 <p class="desc">ERROR - Unknown</p>
-</td><td>Power Meter {#POWER_DESC} Power Usage</td><td><tt>power_meter[{#POWER_METER},interval_wh]</tt></td><td></td><td>0</td><td>7d</td><td>2000d</td>
+</td><td>{#POWER_DESC} usage last 30d</td><td><tt>power_meter[{#POWER_METER},counter_wh,30d]</tt></td><td></td><td>0;h0</td><td>7d</td><td>2000d</td>
+</tr>
+<tr>
+<td>
+<p class="desc">ERROR - Unknown</p>
+</td><td>{#POWER_DESC} usage total</td><td><tt>power_meter[{#POWER_METER},counter_wh]</tt></td><td></td><td>0</td><td>7d</td><td>2000d</td>
+</tr>
+<tr>
+<td>
+<p class="desc">ERROR - Unknown</p>
+</td><td>{#POWER_DESC} flux current</td><td><tt>power_meter[{#POWER_METER},current_ampere]</tt></td><td></td><td>0</td><td>7d</td><td>2000d</td>
+</tr>
+<tr>
+<td>
+<p class="desc">ERROR - Unknown</p>
+</td><td>{#POWER_DESC} usage in Interval</td><td><tt>power_meter[{#POWER_METER},interval_wh]</tt></td><td></td><td>0</td><td>7d</td><td>2000d</td>
 </tr>
 </table>
 </body>
