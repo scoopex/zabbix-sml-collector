@@ -8,6 +8,7 @@
 #
 ########################################################################
 
+from decimal import *
 import socket
 import os
 import logging
@@ -133,9 +134,9 @@ def readPort(port, ser):
     if reading_ok:
         # tested with eHZ-IW8E2Axxx
         isk = str(parseSMLInteger(data_hex, b'0100000009ff', 34, 8))
-        counter = float((parseSMLInteger(data_hex, b'0100010800ff', 34, 16)) / float(10))
+        counter = Decimal((parseSMLInteger(data_hex, b'0100010800ff', 34, 16)) / Decimal(10))
         # 0101621b5200550000023d
-        ampere = float((parseSMLUnsigned(data_hex, b'0100100700ff', 12+15, 8)))
+        ampere = Decimal((parseSMLUnsigned(data_hex, b'0100100700ff', 12+15, 8)))
         return (port, isk, counter, ampere)
     else:
         logger.error("unable to find sml message")
@@ -220,7 +221,7 @@ while True:
 
             # Counter WH
             item_name = 'power_meter[%s,counter_wh]' % isk
-            item_value = '%0.4f' % counter
+            item_value = '%0.4f' % Decimal(counter/Decimal(1000))
             metrics.append(ZabbixMetric(hostname, item_name, item_value))
             logger.info("[%-20s] : %s = %s" % (desc, item_name, item_value))
 
@@ -234,12 +235,11 @@ while True:
             if isk in last_value:
                 item_name = 'power_meter[%s,interval_wh]' % isk
                 time_elapsed = time.time() - last_value[isk]["time"]
-                #item_value = '%0.4f' % float(float(float(counter - float(last_value[isk]["value"])) / float(time_elapsed)) * 3600)
-                item_value = '%0.4f' % float(float(counter - float(last_value[isk]["value"])))
+                item_value = '%0.4f' % Decimal(Decimal(Decimal(counter - Decimal(last_value[isk]["value"])))/Decimal(1000))
                 metrics.append(ZabbixMetric(hostname, item_name, item_value))
                 logger.info("[%-20s] : %s = %s" % (desc, item_name, item_value))
 
-            last_value[isk] = {"time": time.time(), "value": counter}
+            last_value[isk] = {"time": time.time(), "value": Decimal(counter/Decimal(1000))}
 
         if time.time() - last_discovery > 9600:
             discovery_key = "power_meter.discovery"
