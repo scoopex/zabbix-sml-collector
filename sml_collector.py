@@ -51,7 +51,7 @@ def parseSMLInteger(data_hex, obis_string, pos, length):
 
     # break
     if position <= 0:
-        logger.error("unable to find %s raw:%s" % (obis_string,data_hex))
+        logger.error("parseSMLInteger - unable to find %s raw:%s" % (obis_string,data_hex))
         return 0
 
     # extract reading from position start: 34 length: 10 (for 1.8.0.)
@@ -70,7 +70,7 @@ def parseSMLUnsigned(data_hex, obis_string, pos, length):
 
     # break
     if position <= 0:
-        logger.error("unable to find %s raw:%s" % (obis_string,data_hex))
+        logger.error("parseSMLUnsigned - unable to find %s raw:%s" % (obis_string,data_hex))
         return 0
 
     # extract reading from position start: 34 length: 10 (for 1.8.0.)
